@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
 export type DifficultyLevel = 'easy' | 'medium' | 'hard';
@@ -15,12 +16,19 @@ interface GameSettings {
   difficulty: DifficultyLevel;
 }
 
+interface SavedGameState {
+  grid: Cell[][];
+  gameStatus: 'playing' | 'won' | 'lost';
+  difficulty: DifficultyLevel;
+}
+
 interface GameState extends GameSettings {
   grid: Cell[][];
   gameStatus: 'playing' | 'won' | 'lost';
   tempVolume: number;
   tempVibrationEnabled: boolean;
   tempDifficulty: DifficultyLevel;
+  hasSavedGame: boolean;
 
   setVolume: (volume: number) => void;
   setVibrationEnabled: (enabled: boolean) => void;
@@ -36,7 +44,14 @@ interface GameState extends GameSettings {
   revealCell: (row: number, col: number) => void;
   toggleFlag: (row: number, col: number) => void;
   resetGame: () => void;
+  loadSettings: () => Promise<void>;
+  loadSavedGame: () => Promise<void>;
+  checkSavedGame: () => Promise<void>;
+  clearSavedGame: () => Promise<void>;
 }
+
+const SETTINGS_KEY = '@minesweeper_settings';
+const GAME_STATE_KEY = '@minesweeper_game_state';
 
 const getDifficultyConfig = (difficulty: DifficultyLevel) => {
   switch (difficulty) {
@@ -98,6 +113,22 @@ const calculateNeighborBombs = (grid: Cell[][], rows: number, cols: number) => {
   }
 };
 
+const saveGameStateToStorage = async (gameState: SavedGameState) => {
+  try {
+    await AsyncStorage.setItem(GAME_STATE_KEY, JSON.stringify(gameState));
+  } catch (error) {
+    console.error('Error saving game state:', error);
+  }
+};
+
+const saveSettingsToStorage = async (settings: GameSettings) => {
+  try {
+    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch (error) {
+    console.error('Error saving settings:', error);
+  }
+};
+
 export const useGameStore = create<GameState>((set, get) => ({
   volume: 0.5,
   vibrationEnabled: true,
@@ -107,11 +138,24 @@ export const useGameStore = create<GameState>((set, get) => ({
   tempVolume: 0.5,
   tempVibrationEnabled: true,
   tempDifficulty: 'easy',
+  hasSavedGame: false,
 
-  setVolume: (volume) => set({ volume }),
-  setVibrationEnabled: (enabled) => set({ vibrationEnabled: enabled }),
+  setVolume: (volume) => {
+    set({ volume });
+    const { vibrationEnabled, difficulty } = get();
+    saveSettingsToStorage({ volume, vibrationEnabled, difficulty });
+  },
+
+  setVibrationEnabled: (enabled) => {
+    set({ vibrationEnabled: enabled });
+    const { volume, difficulty } = get();
+    saveSettingsToStorage({ volume, vibrationEnabled: enabled, difficulty });
+  },
+
   setDifficulty: (difficulty) => {
     set({ difficulty });
+    const { volume, vibrationEnabled } = get();
+    saveSettingsToStorage({ volume, vibrationEnabled, difficulty });
     get().initializeGrid();
   },
 
@@ -122,6 +166,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   saveSettings: () => {
     const { tempVolume, tempVibrationEnabled, tempDifficulty } = get();
     set({
+      volume: tempVolume,
+      vibrationEnabled: tempVibrationEnabled,
+      difficulty: tempDifficulty,
+    });
+    saveSettingsToStorage({
       volume: tempVolume,
       vibrationEnabled: tempVibrationEnabled,
       difficulty: tempDifficulty,
@@ -145,10 +194,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     placeBombs(grid, config.bombs, config.rows, config.cols);
     calculateNeighborBombs(grid, config.rows, config.cols);
     set({ grid, gameStatus: 'playing' });
+
+    saveGameStateToStorage({ grid, gameStatus: 'playing', difficulty });
+    set({ hasSavedGame: true });
   },
 
   revealCell: (row, col) => {
-    const { grid, gameStatus } = get();
+    const { grid, gameStatus, difficulty } = get();
     if (gameStatus !== 'playing') return;
 
     const cell = grid[row][col];
@@ -159,6 +211,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     if (cell.isBomb) {
       set({ grid: newGrid, gameStatus: 'lost' });
+      get().clearSavedGame();
       return;
     }
 
@@ -189,11 +242,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       r.every((c, ci) => c.isBomb || c.isRevealed)
     );
 
-    set({ grid: newGrid, gameStatus: won ? 'won' : 'playing' });
+    const newStatus = won ? 'won' : 'playing';
+    set({ grid: newGrid, gameStatus: newStatus });
+
+    if (newStatus === 'playing') {
+      saveGameStateToStorage({ grid: newGrid, gameStatus: newStatus, difficulty });
+    } else {
+      get().clearSavedGame();
+    }
   },
 
   toggleFlag: (row, col) => {
-    const { grid, gameStatus } = get();
+    const { grid, gameStatus, difficulty } = get();
     if (gameStatus !== 'playing') return;
 
     const cell = grid[row][col];
@@ -202,9 +262,73 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newGrid = [...grid.map(r => [...r])];
     newGrid[row][col].isFlagged = !cell.isFlagged;
     set({ grid: newGrid });
+
+    saveGameStateToStorage({ grid: newGrid, gameStatus, difficulty });
   },
 
   resetGame: () => {
     get().initializeGrid();
+  },
+
+  loadSettings: async () => {
+    try {
+      const settingsJson = await AsyncStorage.getItem(SETTINGS_KEY);
+      if (settingsJson) {
+        const settings: GameSettings = JSON.parse(settingsJson);
+        set({
+          volume: settings.volume,
+          vibrationEnabled: settings.vibrationEnabled,
+          difficulty: settings.difficulty,
+          tempVolume: settings.volume,
+          tempVibrationEnabled: settings.vibrationEnabled,
+          tempDifficulty: settings.difficulty,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  },
+
+  loadSavedGame: async () => {
+    try {
+      const gameStateJson = await AsyncStorage.getItem(GAME_STATE_KEY);
+      if (gameStateJson) {
+        const savedGame: SavedGameState = JSON.parse(gameStateJson);
+        if (savedGame.gameStatus === 'playing') {
+          set({
+            grid: savedGame.grid,
+            gameStatus: savedGame.gameStatus,
+            difficulty: savedGame.difficulty,
+            hasSavedGame: true,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved game:', error);
+    }
+  },
+
+  checkSavedGame: async () => {
+    try {
+      const gameStateJson = await AsyncStorage.getItem(GAME_STATE_KEY);
+      if (gameStateJson) {
+        const savedGame: SavedGameState = JSON.parse(gameStateJson);
+        set({ hasSavedGame: savedGame.gameStatus === 'playing' });
+      } else {
+        set({ hasSavedGame: false });
+      }
+    } catch (error) {
+      console.error('Error checking saved game:', error);
+      set({ hasSavedGame: false });
+    }
+  },
+
+  clearSavedGame: async () => {
+    try {
+      await AsyncStorage.removeItem(GAME_STATE_KEY);
+      set({ hasSavedGame: false });
+    } catch (error) {
+      console.error('Error clearing saved game:', error);
+    }
   },
 }));
