@@ -3,7 +3,7 @@ import Slider from '@react-native-community/slider';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Save, Smartphone, SmartphoneNfc, Volume1, Volume2, VolumeX } from 'lucide-react-native';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 export default function OptionsScreen() {
   const router = useRouter();
@@ -62,28 +62,34 @@ export default function OptionsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
+    <ScrollView className="flex-1 bg-[#2c3e50]">
+      <View className="flex-row items-center p-5 pt-15 bg-[#34495e]">
+        <TouchableOpacity onPress={handleCancel} className="mr-4">
           <ArrowLeft size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Options</Text>
+        <Text className="text-3xl font-bold text-[#ecf0f1]">Options</Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Volume</Text>
-        <View style={styles.volumeContainer}>
-          <TouchableOpacity style={styles.volumeButton} onPress={decreaseVolume}>
-            <Text style={styles.volumeButtonText}>-</Text>
+      <View className="p-5 border-b border-[#34495e]">
+        <Text className="text-lg font-semibold text-[#ecf0f1] mb-4">Volume</Text>
+        <View className="flex-row items-center justify-between">
+          <TouchableOpacity
+            className="bg-[#f39c12] w-[50px] h-[50px] rounded-full justify-center items-center"
+            onPress={decreaseVolume}
+          >
+            <Text className="text-white text-2xl font-bold">-</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.muteButton} onPress={muteVolume}>
+          <TouchableOpacity
+            className="bg-[#e74c3c] w-[50px] h-[50px] rounded-full justify-center items-center"
+            onPress={muteVolume}
+          >
             <VolumeX size={20} color="#fff" />
           </TouchableOpacity>
 
-          <View style={styles.sliderContainer}>
+          <View className="flex-1 mx-2.5">
             <Slider
-              style={styles.slider}
+              style={{ width: '100%', height: 40 }}
               minimumValue={0}
               maximumValue={1}
               value={tempVolume}
@@ -94,21 +100,26 @@ export default function OptionsScreen() {
             />
           </View>
 
-          <TouchableOpacity style={styles.volumeButton} onPress={increaseVolume}>
-            <Text style={styles.volumeButtonText}>+</Text>
+          <TouchableOpacity
+            className="bg-[#f39c12] w-[50px] h-[50px] rounded-full justify-center items-center"
+            onPress={increaseVolume}
+          >
+            <Text className="text-white text-2xl font-bold">+</Text>
           </TouchableOpacity>
 
-          <View style={styles.volumeIcon}>
+          <View className="bg-[#3498db] w-[50px] h-[50px] rounded-full justify-center items-center">
             {getVolumeIcon()}
           </View>
         </View>
-        <Text style={styles.volumeText}>{Math.round(tempVolume * 100)}%</Text>
+        <Text className="text-[#ecf0f1] text-base mt-2.5 text-center">
+          {Math.round(tempVolume * 100)}%
+        </Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Vibration</Text>
-        <View style={styles.vibrationContainer}>
-          <View style={styles.vibrationIcon}>
+      <View className="p-5 border-b border-[#34495e]">
+        <Text className="text-lg font-semibold text-[#ecf0f1] mb-4">Vibration</Text>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1">
             {tempVibrationEnabled ? (
               <SmartphoneNfc size={24} color="#3498db" />
             ) : (
@@ -121,79 +132,55 @@ export default function OptionsScreen() {
             trackColor={{ false: '#7f8c8d', true: '#3498db' }}
             thumbColor="#fff"
           />
-          <Text style={styles.vibrationText}>
+          <Text className="text-[#ecf0f1] text-base ml-4">
             {tempVibrationEnabled ? 'Activée' : 'Désactivée'}
           </Text>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Niveau de difficulté</Text>
+      <View className="p-5 border-b border-[#34495e]">
+        <Text className="text-lg font-semibold text-[#ecf0f1] mb-4">Niveau de difficulté</Text>
         <TouchableOpacity
-          style={styles.dropdown}
+          className="bg-[#34495e] p-4 rounded-lg border border-[#7f8c8d]"
           onPress={() => setShowDifficultyMenu(!showDifficultyMenu)}
         >
-          <Text style={styles.dropdownText}>{getDifficultyLabel(tempDifficulty)}</Text>
+          <Text className="text-[#ecf0f1] text-base">{getDifficultyLabel(tempDifficulty)}</Text>
         </TouchableOpacity>
 
         {showDifficultyMenu && (
-          <View style={styles.dropdownMenu}>
+          <View className="mt-2.5 bg-[#34495e] rounded-lg overflow-hidden border border-[#7f8c8d]">
             <TouchableOpacity
-              style={[
-                styles.dropdownItem,
-                tempDifficulty === 'easy' && styles.dropdownItemSelected,
-              ]}
+              className={`p-4 border-b border-[#2c3e50] ${tempDifficulty === 'easy' ? 'bg-[#3498db]' : ''}`}
               onPress={() => {
                 setTempDifficulty('easy');
                 setShowDifficultyMenu(false);
               }}
             >
-              <Text
-                style={[
-                  styles.dropdownItemText,
-                  tempDifficulty === 'easy' && styles.dropdownItemTextSelected,
-                ]}
-              >
+              <Text className={`text-base ${tempDifficulty === 'easy' ? 'text-white font-semibold' : 'text-[#ecf0f1]'}`}>
                 {getDifficultyLabel('easy')}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.dropdownItem,
-                tempDifficulty === 'medium' && styles.dropdownItemSelected,
-              ]}
+              className={`p-4 border-b border-[#2c3e50] ${tempDifficulty === 'medium' ? 'bg-[#3498db]' : ''}`}
               onPress={() => {
                 setTempDifficulty('medium');
                 setShowDifficultyMenu(false);
               }}
             >
-              <Text
-                style={[
-                  styles.dropdownItemText,
-                  tempDifficulty === 'medium' && styles.dropdownItemTextSelected,
-                ]}
-              >
+              <Text className={`text-base ${tempDifficulty === 'medium' ? 'text-white font-semibold' : 'text-[#ecf0f1]'}`}>
                 {getDifficultyLabel('medium')}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.dropdownItem,
-                tempDifficulty === 'hard' && styles.dropdownItemSelected,
-              ]}
+              className={`p-4 border-b border-[#2c3e50] ${tempDifficulty === 'hard' ? 'bg-[#3498db]' : ''}`}
               onPress={() => {
                 setTempDifficulty('hard');
                 setShowDifficultyMenu(false);
               }}
             >
-              <Text
-                style={[
-                  styles.dropdownItemText,
-                  tempDifficulty === 'hard' && styles.dropdownItemTextSelected,
-                ]}
-              >
+              <Text className={`text-base ${tempDifficulty === 'hard' ? 'text-white font-semibold' : 'text-[#ecf0f1]'}`}>
                 {getDifficultyLabel('hard')}
               </Text>
             </TouchableOpacity>
@@ -201,164 +188,15 @@ export default function OptionsScreen() {
         )}
       </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+      <TouchableOpacity
+        className="flex-row items-center justify-center bg-[#27ae60] p-4.5 rounded-xl m-5 shadow-md"
+        onPress={handleSave}
+      >
         <Save size={24} color="#fff" />
-        <Text style={styles.saveButtonText}>Sauvegarder</Text>
+        <Text className="text-white text-lg font-semibold ml-2.5">Sauvegarder</Text>
       </TouchableOpacity>
 
-      <View style={styles.spacer} />
+      <View className="h-10" />
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#2c3e50',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#34495e',
-  },
-  backButton: {
-    marginRight: 15,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#ecf0f1',
-  },
-  section: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#34495e',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#ecf0f1',
-    marginBottom: 15,
-  },
-  volumeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  volumeButton: {
-    backgroundColor: '#f39c12',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  volumeButtonText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  muteButton: {
-    backgroundColor: '#e74c3c',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sliderContainer: {
-    flex: 1,
-    marginHorizontal: 10,
-  },
-  slider: {
-    width: '100%',
-    height: 40,
-  },
-  volumeIcon: {
-    backgroundColor: '#3498db',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  volumeText: {
-    color: '#ecf0f1',
-    fontSize: 16,
-    marginTop: 10,
-    textAlign: 'center',
-  },
-  vibrationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  vibrationIcon: {
-    flex: 1,
-  },
-  vibrationText: {
-    color: '#ecf0f1',
-    fontSize: 16,
-    marginLeft: 15,
-  },
-  dropdown: {
-    backgroundColor: '#34495e',
-    padding: 15,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#7f8c8d',
-  },
-  dropdownText: {
-    color: '#ecf0f1',
-    fontSize: 16,
-  },
-  dropdownMenu: {
-    marginTop: 10,
-    backgroundColor: '#34495e',
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#7f8c8d',
-  },
-  dropdownItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2c3e50',
-  },
-  dropdownItemSelected: {
-    backgroundColor: '#3498db',
-  },
-  dropdownItemText: {
-    color: '#ecf0f1',
-    fontSize: 16,
-  },
-  dropdownItemTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#27ae60',
-    padding: 18,
-    borderRadius: 12,
-    margin: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-    marginLeft: 10,
-  },
-  spacer: {
-    height: 40,
-  },
-});

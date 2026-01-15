@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Flag, RotateCcw } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function GameScreen() {
   const router = useRouter();
@@ -97,68 +97,62 @@ export default function GameScreen() {
   const cellSize = getCellSize();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+    <View className="flex-1 bg-[#2c3e50]">
+      <View className="flex-row items-center justify-between p-5 pt-15 bg-[#34495e]">
+        <TouchableOpacity onPress={() => router.back()} className="p-1.5">
           <ArrowLeft size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Démineur</Text>
-        <TouchableOpacity onPress={resetGame} style={styles.resetButton}>
+        <Text className="text-2xl font-bold text-[#ecf0f1]">Démineur</Text>
+        <TouchableOpacity onPress={resetGame} className="p-1.5">
           <RotateCcw size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.controls}>
+      <View className="flex-row justify-between items-center p-4 bg-[#34495e]">
         <TouchableOpacity
-          style={[styles.modeButton, flagMode && styles.modeButtonActive]}
+          className={`flex-row items-center p-3 rounded-lg ${flagMode ? 'bg-[#e67e22]' : 'bg-[#3498db]'}`}
           onPress={() => setFlagMode(!flagMode)}
         >
           <Flag size={20} color="#fff" />
-          <Text style={styles.modeButtonText}>
+          <Text className="text-white text-sm font-semibold ml-2">
             {flagMode ? 'Mode Drapeau' : 'Mode Normal'}
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.statusContainer}>
-          <Text style={styles.statusText}>
+        <View className="bg-[#2c3e50] p-3 rounded-lg">
+          <Text className="text-[#ecf0f1] text-base font-semibold">
             {gameStatus === 'playing' ? 'En cours' : gameStatus === 'won' ? 'Gagné!' : 'Perdu!'}
           </Text>
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        horizontal={true}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.gridContainer}>
+      <ScrollView className="flex-1" contentContainerClassName="p-5" horizontal={true}>
+        <ScrollView contentContainerClassName="p-5">
+          <View className="items-center justify-center">
             {grid.map((row, rowIndex) => (
-              <View key={rowIndex} style={styles.row}>
+              <View key={rowIndex} className="flex-row">
                 {row.map((cell, colIndex) => (
                   <TouchableOpacity
                     key={colIndex}
-                    style={[
-                      styles.cell,
-                      {
-                        width: cellSize,
-                        height: cellSize,
-                        backgroundColor: getCellColor(cell),
-                      },
-                    ]}
+                    style={{
+                      width: cellSize,
+                      height: cellSize,
+                      backgroundColor: getCellColor(cell),
+                      borderWidth: 1,
+                      borderColor: '#2c3e50',
+                    }}
+                    className="justify-center items-center"
                     onPress={() => handleCellPress(rowIndex, colIndex)}
                     disabled={gameStatus !== 'playing'}
                   >
                     <Text
-                      style={[
-                        styles.cellText,
-                        {
-                          fontSize: cellSize * 0.6,
-                          color: cell.isRevealed && !cell.isBomb
-                            ? getNumberColor(cell.neighborBombs)
-                            : '#fff',
-                        },
-                      ]}
+                      style={{
+                        fontSize: cellSize * 0.6,
+                        color: cell.isRevealed && !cell.isBomb
+                          ? getNumberColor(cell.neighborBombs)
+                          : '#fff',
+                      }}
+                      className="font-bold"
                     >
                       {getCellContent(cell)}
                     </Text>
@@ -172,84 +166,3 @@ export default function GameScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#2c3e50',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#34495e',
-  },
-  backButton: {
-    padding: 5,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ecf0f1',
-  },
-  resetButton: {
-    padding: 5,
-  },
-  controls: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#34495e',
-  },
-  modeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3498db',
-    padding: 12,
-    borderRadius: 8,
-  },
-  modeButtonActive: {
-    backgroundColor: '#e67e22',
-  },
-  modeButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  statusContainer: {
-    backgroundColor: '#2c3e50',
-    padding: 12,
-    borderRadius: 8,
-  },
-  statusText: {
-    color: '#ecf0f1',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-  },
-  gridContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  row: {
-    flexDirection: 'row',
-  },
-  cell: {
-    borderWidth: 1,
-    borderColor: '#2c3e50',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cellText: {
-    fontWeight: 'bold',
-  },
-});
