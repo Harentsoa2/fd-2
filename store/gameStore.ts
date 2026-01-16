@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { deleteSavedGameFromDB, getSavedGameFromDB, saveGameToDB } from './database';
 
 export type DifficultyLevel = 'easy' | 'medium' | 'hard';
 
@@ -51,7 +52,6 @@ interface GameState extends GameSettings {
 }
 
 const SETTINGS_KEY = '@minesweeper_settings';
-const GAME_STATE_KEY = '@minesweeper_game_state';
 
 const getDifficultyConfig = (difficulty: DifficultyLevel) => {
   switch (difficulty) {
@@ -110,14 +110,6 @@ const calculateNeighborBombs = (grid: Cell[][], rows: number, cols: number) => {
         grid[row][col].neighborBombs = count;
       }
     }
-  }
-};
-
-const saveGameStateToStorage = async (gameState: SavedGameState) => {
-  try {
-    await AsyncStorage.setItem(GAME_STATE_KEY, JSON.stringify(gameState));
-  } catch (error) {
-    console.error('Error saving game state:', error);
   }
 };
 
@@ -195,7 +187,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     calculateNeighborBombs(grid, config.rows, config.cols);
     set({ grid, gameStatus: 'playing' });
 
-    saveGameStateToStorage({ grid, gameStatus: 'playing', difficulty });
+    saveGameToDB(grid, 'playing', difficulty);
     set({ hasSavedGame: true });
   },
 
@@ -246,7 +238,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ grid: newGrid, gameStatus: newStatus });
 
     if (newStatus === 'playing') {
-      saveGameStateToStorage({ grid: newGrid, gameStatus: newStatus, difficulty });
+      saveGameToDB(newGrid, newStatus, difficulty);
     } else {
       get().clearSavedGame();
     }
@@ -263,7 +255,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     newGrid[row][col].isFlagged = !cell.isFlagged;
     set({ grid: newGrid });
 
-    saveGameStateToStorage({ grid: newGrid, gameStatus, difficulty });
+    saveGameToDB(newGrid, gameStatus, difficulty);
   },
 
   resetGame: () => {
@@ -291,17 +283,14 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   loadSavedGame: async () => {
     try {
-      const gameStateJson = await AsyncStorage.getItem(GAME_STATE_KEY);
-      if (gameStateJson) {
-        const savedGame: SavedGameState = JSON.parse(gameStateJson);
-        if (savedGame.gameStatus === 'playing') {
-          set({
-            grid: savedGame.grid,
-            gameStatus: savedGame.gameStatus,
-            difficulty: savedGame.difficulty,
-            hasSavedGame: true,
-          });
-        }
+      const savedGame = await getSavedGameFromDB();
+      if (savedGame && savedGame.gameStatus === 'playing') {
+        set({
+          grid: JSON.parse(savedGame.grid),
+          gameStatus: savedGame.gameStatus as any,
+          difficulty: savedGame.difficulty as DifficultyLevel,
+          hasSavedGame: true,
+        });
       }
     } catch (error) {
       console.error('Error loading saved game:', error);
@@ -310,13 +299,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   checkSavedGame: async () => {
     try {
-      const gameStateJson = await AsyncStorage.getItem(GAME_STATE_KEY);
-      if (gameStateJson) {
-        const savedGame: SavedGameState = JSON.parse(gameStateJson);
-        set({ hasSavedGame: savedGame.gameStatus === 'playing' });
-      } else {
-        set({ hasSavedGame: false });
-      }
+      const savedGame = await getSavedGameFromDB();
+      set({ hasSavedGame: !!savedGame && savedGame.gameStatus === 'playing' });
     } catch (error) {
       console.error('Error checking saved game:', error);
       set({ hasSavedGame: false });
@@ -325,7 +309,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   clearSavedGame: async () => {
     try {
-      await AsyncStorage.removeItem(GAME_STATE_KEY);
+      await deleteSavedGameFromDB();
       set({ hasSavedGame: false });
     } catch (error) {
       console.error('Error clearing saved game:', error);
